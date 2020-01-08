@@ -6,7 +6,7 @@ import me.liuwj.ktorm.schema.int
 import me.liuwj.ktorm.schema.varchar
 
 object Users : Table<User>("USER") {
-    val id by int("id").primaryKey()
-    val name by varchar("name")
-    val password by varchar("pwd")
+    val id by int("id").primaryKey().bindTo { it.id }
+    val name by varchar("name").bindTo { it.name }
+    val password by varchar("pwd").bindTo { it.pwd }
 }

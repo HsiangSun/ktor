@@ -6,7 +6,9 @@ import cn.hsiangsun.bean.User
 import cn.hsiangsun.exception.InvalidCredentialsException
 import cn.hsiangsun.exception.InvalidLoginException
 import cn.hsiangsun.model.Users
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.util.JSONPObject
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.application.Application
@@ -34,11 +36,11 @@ import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
 import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.and
-import me.liuwj.ktorm.dsl.eq
-import me.liuwj.ktorm.dsl.select
-import me.liuwj.ktorm.dsl.where
+import me.liuwj.ktorm.dsl.*
+import me.liuwj.ktorm.entity.findAll
 import me.liuwj.ktorm.entity.findList
+import me.liuwj.ktorm.entity.findOne
+import java.util.*
 import kotlin.reflect.full.memberProperties
 
 
@@ -106,13 +108,20 @@ fun Application.module(testing: Boolean = false) {
 
         //login
         post("/login"){
-            var post = call.receive<LoginRegister>()
-            //var user = Users.getOrPut(post.user){User(post.user,post.password)}
-            //var query = Users.select().where { (Users.password eq post.password) and (Users.name eq post.user) }
-            var query = Users.findList { it.name eq post.user and (it.password eq post.password) }
+            val post = call.receive<LoginRegister>()
+            val query = Users.findList { it.name eq post.user and (it.password eq post.password) }
             if (query.isEmpty()) throw InvalidLoginException()
-            //if (user.password != post.password) throw InvalidLoginException()
             call.respond(mapOf("token" to simpleJWT.sign(post.user)))
+        }
+
+        get("/sql"){
+            //val query = Users.select().orderBy(Users.id.desc()).map { Users.createEntity(it) }
+            var query = Users.findOne { it.id eq 1 }
+
+            //@TODO 不能正确响应我想要到结果
+            call.respond(mapOf( query?.name to query?.pwd ))
+
+
         }
 
 
