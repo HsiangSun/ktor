@@ -6,24 +6,50 @@ import cn.hsiangsun.bean.User
 import cn.hsiangsun.bean.Users
 import cn.hsiangsun.exception.InvalidCredentialsException
 import cn.hsiangsun.exception.InvalidLoginException
-import io.ktor.application.*
-import io.ktor.response.*
-import io.ktor.request.*
-import io.ktor.features.*
-import io.ktor.routing.*
-import io.ktor.http.*
-import io.ktor.auth.*
-import com.fasterxml.jackson.databind.*
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
+import io.ktor.application.Application
+import io.ktor.application.call
+import io.ktor.application.install
+import io.ktor.auth.Authentication
+import io.ktor.auth.UserIdPrincipal
+import io.ktor.auth.authenticate
 import io.ktor.auth.jwt.jwt
-import io.ktor.jackson.*
-import io.ktor.client.*
-import io.ktor.client.engine.apache.*
+import io.ktor.auth.principal
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.apache.Apache
+import io.ktor.features.CORS
+import io.ktor.features.ContentNegotiation
+import io.ktor.features.StatusPages
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.jackson.jackson
+import io.ktor.request.receive
+import io.ktor.response.respond
+import io.ktor.response.respondText
+import io.ktor.routing.get
+import io.ktor.routing.post
+import io.ktor.routing.routing
+import me.liuwj.ktorm.database.Database
+import me.liuwj.ktorm.dsl.select
+import me.liuwj.ktorm.logging.ConsoleLogger
+import me.liuwj.ktorm.logging.LogLevel
+
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
+
+    //make datasource
+    val config = HikariConfig("/hikari.properties")
+    val datasource = HikariDataSource(config)
+    //create mysql connection
+    Database.connect(datasource)
 
     val simpleJWT = SimpleJWT("thisissolt123456")
     install(Authentication){
@@ -44,6 +70,7 @@ fun Application.module(testing: Boolean = false) {
         }
     }
 
+    //跨域配置
     install(CORS) {
         method(HttpMethod.Options)
         method(HttpMethod.Put)
@@ -84,11 +111,20 @@ fun Application.module(testing: Boolean = false) {
         }
 
 
-        get("/auth"){
-            val principal = call.principal<UserIdPrincipal>() ?: throw InvalidCredentialsException("Invalid token")
-            println(principal)
-            call.respond(mapOf("msg" to "login success!"))
+        //需要token验证的api
+        authenticate {
+            get("/auth"){
+                call.principal<UserIdPrincipal>()
+
+                //Database.connect(url="jdbc:mysql://167.86.69.114:3306/test?seSSL=false", driver = "com.mysql.jdbc.Driver",user="root",password = "962464")
+                for (row in cn.hsiangsun.model.Users.select()){
+                    println(row[cn.hsiangsun.model.Users.name] +"="+row[cn.hsiangsun.model.Users.password])
+                }
+            }
         }
+
+
+
 
     }
 }
