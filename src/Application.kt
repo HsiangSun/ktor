@@ -3,9 +3,9 @@ package cn.hsiangsun
 import cn.hsiangsun.auth.SimpleJWT
 import cn.hsiangsun.bean.LoginRegister
 import cn.hsiangsun.bean.User
-import cn.hsiangsun.bean.Users
 import cn.hsiangsun.exception.InvalidCredentialsException
 import cn.hsiangsun.exception.InvalidLoginException
+import cn.hsiangsun.model.Users
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -34,9 +34,12 @@ import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
 import me.liuwj.ktorm.database.Database
+import me.liuwj.ktorm.dsl.and
+import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.dsl.select
-import me.liuwj.ktorm.logging.ConsoleLogger
-import me.liuwj.ktorm.logging.LogLevel
+import me.liuwj.ktorm.dsl.where
+import me.liuwj.ktorm.entity.findList
+import kotlin.reflect.full.memberProperties
 
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -50,7 +53,7 @@ fun Application.module(testing: Boolean = false) {
     val datasource = HikariDataSource(config)
     //create mysql connection
     Database.connect(datasource)
-
+    //token secret salt
     val simpleJWT = SimpleJWT("thisissolt123456")
     install(Authentication){
         jwt {
@@ -104,10 +107,12 @@ fun Application.module(testing: Boolean = false) {
         //login
         post("/login"){
             var post = call.receive<LoginRegister>()
-            var user = Users.getOrPut(post.user){User(post.user,post.password)}
-            //验证失败并抛出异常
-            if (user.password != post.password) throw InvalidLoginException()
-            call.respond(mapOf("token" to simpleJWT.sign(user.name)))
+            //var user = Users.getOrPut(post.user){User(post.user,post.password)}
+            //var query = Users.select().where { (Users.password eq post.password) and (Users.name eq post.user) }
+            var query = Users.findList { it.name eq post.user and (it.password eq post.password) }
+            if (query.isEmpty()) throw InvalidLoginException()
+            //if (user.password != post.password) throw InvalidLoginException()
+            call.respond(mapOf("token" to simpleJWT.sign(post.user)))
         }
 
 
