@@ -3,10 +3,12 @@ package cn.hsiangsun
 import cn.hsiangsun.auth.SimpleJWT
 import cn.hsiangsun.exception.InvalidCredentialsException
 import cn.hsiangsun.exception.InvalidLoginException
+import cn.hsiangsun.route.apiHtml
 import cn.hsiangsun.route.apiUsers
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import freemarker.cache.ClassTemplateLoader
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
@@ -19,6 +21,7 @@ import io.ktor.client.request.request
 import io.ktor.features.CORS
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.StatusPages
+import io.ktor.freemarker.FreeMarker
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -76,10 +79,16 @@ fun Application.module(testing: Boolean =false) {
             registerModule(KtormModule())
         }
     }
+    install(FreeMarker) {
+        templateLoader = ClassTemplateLoader(this::class.java.classLoader, "templates")
+    }
+
+
 
     //application api
     routing {
         apiUsers(simpleJWT)
+        apiHtml()
     }
 
 

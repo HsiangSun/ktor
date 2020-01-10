@@ -6,6 +6,7 @@ import cn.hsiangsun.bean.User
 import cn.hsiangsun.exception.InvalidCredentialsException
 import cn.hsiangsun.exception.InvalidLoginException
 import cn.hsiangsun.model.Users
+import cn.hsiangsun.util.Response
 import io.ktor.application.call
 import io.ktor.auth.UserIdPrincipal
 import io.ktor.auth.authenticate
@@ -55,6 +56,7 @@ fun Routing.apiUsers(simpleJWT: SimpleJWT) {
             var query = Users.asSequence().toList()
             call.respond(query)
         }
+        //1 1 2
 
         post("/add"){
             val post = call.receive<User>()
@@ -70,7 +72,9 @@ fun Routing.apiUsers(simpleJWT: SimpleJWT) {
         authenticate {
             get("/auth"){
                 call.principal<UserIdPrincipal>()?:throw InvalidCredentialsException()
-                call.respond(mapOf("msg" to "Success"))
+                var query = Users.asSequence().toList()
+                //call.respond(query)
+                call.respond(Response("data",query))
             }
         }
     }
